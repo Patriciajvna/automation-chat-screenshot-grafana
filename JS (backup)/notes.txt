@@ -1,0 +1,362 @@
+// Fungsi mengambil tangkapan layar
+async function takeScreenshot(page, outputPath) {
+    const viewportWidth = 1920;
+    let viewportHeight = 1080; // Mulai dengan ketinggian yang cukup
+
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+
+    // Tunggu untuk memastikan semua konten dimuat
+    await page.waitForFunction('document.readyState === "complete"');
+
+    // Scroll ke bawah untuk memastikan semua konten dimuat
+    await page.evaluate(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    // Tunggu sebentar untuk membiarkan halaman stabil setelah scroll
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Anda dapat menyesuaikan timeout sesuai kebutuhan
+
+    // Mengukur tinggi seluruh konten pada halaman web
+    const bodyHeight = await page.evaluate(() => document.body.scrollHeight);
+
+    // Sesuaikan viewportHeight dengan tinggi konten
+    viewportHeight = Math.max(bodyHeight, viewportHeight);
+
+    // Atur viewport dengan tinggi yang diperbarui
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+
+    // Tunggu sebentar untuk membiarkan halaman stabil setelah mengubah ukuran viewport
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Anda dapat menyesuaikan timeout sesuai kebutuhan
+
+    // Mengambil tangkapan layar dari seluruh halaman
+    await page.screenshot({ path: outputPath, fullPage: true });
+}
+
+
+// Fungsi mengambil tangkapan layar
+async function takeScreenshot(page, outputPath) {
+    const viewportWidth = 1920;
+    const viewportHeight = 7500;
+    // // Mengukur tinggi seluruh konten pada halaman web
+    // const bodyHeight = await page.evaluate(() => document.body.scrollHeight);
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+    await new Promise(resolve => setTimeout(resolve, 25000));
+    
+    // Scroll the page to capture the entire content
+    const bodyHandle = await page.$('body');
+    const { height: bodyHeight } = await bodyHandle.boundingBox();
+    await bodyHandle.dispose();
+
+    await page.evaluate((bodyHeight, viewportHeight) => {
+        window.scrollTo(0, bodyHeight);
+    }, bodyHeight, viewportHeight);
+
+    // Wait for a short delay for the page to settle after scrolling
+    await new Promise(resolve => setTimeout(resolve, 25000)); // Adjust delay as needed
+    await page.waitForFunction('document.readyState === "complete"');
+    await page.screenshot({ path: outputPath , fullPage: true});
+}
+
+
+async function takeScreenshot(page, outputPath) {
+    // Get the total height of the page
+    const bodyHandle = await page.$('body');
+    const { height } = await bodyHandle.boundingBox();
+    await bodyHandle.dispose();
+
+    // Set the viewport to cover the whole page
+    await page.setViewport({
+        width: null,
+        height: null
+    });
+
+    // Scroll down to the bottom of the page to load all content
+    await autoScroll(page);
+    await new Promise(resolve => setTimeout(resolve, 20000));
+    // Take the screenshot of the entire page
+    await page.screenshot({ path: outputPath, fullPage: true });
+}
+
+async function autoScroll(page) {
+    await page.evaluate(async () => {
+        await new Promise((resolve, reject) => {
+            let totalHeight = 0;
+            const distance = 100;
+            const maxScrollAttempts = 100;
+
+            const timer = setInterval(() => {
+                const scrollHeight = document.body.scrollHeight;
+                window.scrollBy(0, distance);
+                totalHeight += distance;
+
+                if (totalHeight >= scrollHeight || maxScrollAttempts === 0) {
+                    clearInterval(timer);
+                    resolve();
+                }
+
+                maxScrollAttempts--;
+            }, 100);
+        });
+    });
+}
+
+
+// Fungsi mengambil tangkapan layar satu tampilan halaman penuh yang menggulir ke bawah
+async function takeScreenshot(page, outputPath) {
+    await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+    let scrollHeight = 0;
+    const viewportHeight = page.viewport().height;
+    while (scrollHeight < await page.evaluate(() => document.body.scrollHeight)) {
+        await page.evaluate(_viewportHeight => {
+            window.scrollBy(0, _viewportHeight);
+        }, viewportHeight);
+        scrollHeight += viewportHeight;
+        
+    }
+    await new Promise(resolve => setTimeout(resolve, 20000));
+    await page.screenshot({ path: outputPath, fullPage: true });
+}
+
+
+// Fungsi mengambil tangkapan layar satu tampilan halaman web full
+async function takeScreenshot(page, outputPath) {
+    await page.setViewport({ width: 1920, deviceScaleFactor: 1 });
+
+    // Menggulir halaman ke bawah dan menunggu beberapa saat agar konten tergulir
+    await page.evaluate(async () => {
+        await new Promise((resolve) => {
+            let totalHeight = 0;
+            const distance = 100;
+            const timer = setInterval(() => {
+                window.scrollBy(0, distance);
+                totalHeight += distance;
+
+                // Saat mencapai akhir halaman, hentikan pengguliran
+                if (totalHeight >= document.body.scrollHeight) {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, 100);
+        });
+    });
+
+    // Mengambil tangkapan layar halaman web yang lengkap
+    await page.screenshot({ path: outputPath, fullPage: true });
+}
+
+
+// Fungsi mengambil tangkapan layar satu tampilan halaman web full
+async function takeScreenshot(page, outputPath) {
+    // Mengambil tinggi dokumen
+    const bodyHandle = await page.$('body');
+    const { height } = await bodyHandle.boundingBox();
+    await bodyHandle.dispose();
+
+    // Menyetel viewport sesuai dengan lebar tetapi tanpa tinggi
+    await page.setViewport({ width: 1920, height: Math.ceil(height), deviceScaleFactor: 1 });
+
+    // Mengambil tangkapan layar halaman web yang lengkap
+    await page.screenshot({ path: outputPath, fullPage: true });
+}
+
+
+// Function to scroll to the bottom of the page
+async function scrollToBottom(page, maxRetries = 3) {
+    let retryScrollCount = maxRetries;
+
+    while (retryScrollCount > 0) {
+        try {
+            let scrollPosition = await page.$eval('.custom-scrollbar', wrapper => wrapper.scrollTop);
+
+            await page.evaluate(() => document.querySelector('.custom-scrollbar').scrollBy({ top: 500, behavior: 'smooth' }));
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            await page.waitForFunction(`document.querySelector('.custom-scrollbar').scrollTop > ${scrollPosition}`, { timeout: 2000000 });
+
+            retryScrollCount = maxRetries; // Reset retry count upon successful scroll
+        } catch (error) {
+            console.error("Error scrolling:", error.message);
+            retryScrollCount--;
+        }
+    }
+}
+
+// Fungsi mengambil tangkapan layar
+async function takeScreenshot(page, outputPath) {
+    const viewportWidth = 1920;
+    const viewportHeight = 1500;
+    // // Mengukur tinggi seluruh konten pada halaman web
+    // const bodyHeight = await page.evaluate(() => document.body.scrollHeight);
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+    await scrollToBottom(page);
+    // Wait for a short delay for the page to settle after scrolling
+    await new Promise(resolve => setTimeout(resolve, 25000)); // Adjust delay as needed
+    await page.waitForFunction('document.readyState === "complete"');
+    await page.screenshot({ path: outputPath , fullPage: true});
+}
+
+
+// Fungsi mengambil tangkapan layar
+async function takeScreenshot(page, outputPath) {
+    const viewportWidth = 1920;
+    let viewportHeight = 1500;
+    const scrollableAreaSelector = 'body';
+    // // Mengukur tinggi seluruh konten pada halaman web
+    // const bodyHeight = await page.evaluate(() => document.body.scrollHeight);
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+    // Get total page height
+    const totalPageHeight = await page.evaluate(() => {
+        return document.body.scrollHeight;
+    });
+
+    // Set viewport height to total page height
+    viewportHeight = totalPageHeight;
+
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+
+    // Scroll down the dashboard (optional)
+    await page.evaluate(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+    // Wait for a short delay for the page to settle after scrolling
+    await new Promise(resolve => setTimeout(resolve, 25000)); // Adjust delay as needed
+    await page.waitForFunction('document.readyState === "complete"');
+    await page.screenshot({ path: outputPath , fullPage: true});
+}
+
+
+const puppeteer = require('puppeteer');
+const mssql = require('mssql');
+const fs = require('fs');
+const axios = require('axios');
+
+async function login(page, loginData, isFirstLoop) {
+    if (isFirstLoop) {
+        // Jalankan langkah-langkah login lengkap hanya pada loopingan pertama
+        await page.goto(loginData.loginUrl, { waitUntil: 'networkidle2' });
+        await page.waitForSelector("input[name=user]"); 
+        await page.type("input[name=user]", "rco_eng", { delay: 100 }); // Selector Username
+        await page.type("input[name=password]", "P@ssw0rd", { delay: 100 }); // Selector Password
+        await page.click(".css-6ntnx5-button"); // Selector Login Button
+        // await page.waitForSelector(".css-bhnz0e-button"); // selector skip button
+        // await page.click(".css-bhnz0e-button");
+        await page.waitForSelector(loginData.dashboardSelector, { delay: 5000, timeout: 6000000 });
+    } else {
+        // Hanya muat ulang halaman dan tunggu elemen dashboard pada loopingan selanjutnya
+        await page.goto(loginData.loginUrl, { waitUntil: 'networkidle2' });
+        await page.waitForSelector(loginData.dashboardSelector, { delay: 5000, timeout: 6000000 });
+    }
+    await page.reload({ delay: 5000 });
+}
+
+// Fungsi mengambil tangkapan layar
+async function takeScreenshot(page, outputPath, viewportHeight) {
+    const viewportWidth = 1920;
+    await page.setViewport({ width: viewportWidth, height: viewportHeight });
+    await new Promise(resolve => setTimeout(resolve, 25000)); // Adjust delay as needed
+    await page.waitForFunction('document.readyState === "complete"');
+    await page.screenshot({ path: outputPath , fullPage: true, quality: 100 });
+}
+
+// Fungsi kirim media ke WhatsApp
+async function sendMediaToWhatsApp(mediaPath, number, caption, idDashboard, namaDashboard, currentTime) {
+    try {
+        for (const media of mediaPath) {
+            const response = await axios.post('http://localhost:8001/send-media', {
+                number: number,
+                caption: caption,
+                mediaPath: media
+            });
+            console.log('Pesan WhatsApp terkirim!');
+
+            const logData = {
+                idDashboard: idDashboard,
+                namaDashboard: namaDashboard,
+                status: (response.status === 200) ? 'Pesan berhasil terkirim' : 'Gagal mengirim pesan',
+                timestamp: currentTime
+            };
+            const logQuery = `INSERT INTO WhatsAppMessageLog (idDashboard, namaDashboard, status, timestamp) VALUES (${logData.idDashboard}, '${logData.namaDashboard}', '${logData.status}', '${logData.timestamp}')`;
+            await mssql.query(logQuery);
+        }   
+    } catch (error) {
+        console.error('Gagal mengirim pesan WhatsApp:', error);
+    }
+}
+
+// Fungsi utama
+async function main() {
+    let browser;
+    try {
+        // Buka koneksi ke SQL Server
+        const config = {
+            user: 'patriciajovena',
+            password: 'patricia',
+            server: 'localhost',
+            port: 1433,
+            database: 'Patricia',
+            options: {
+              encrypt: false,
+              trustServerCertificate: true,
+            }
+        };
+        await mssql.connect(config);
+
+        // Ambil data login dari database
+        const query = 'SELECT id, loginUrl, dashboardSelector, namaDashboard, heightViewPort, isActive FROM LoginTable WHERE isActive = 1'; // Hanya ambil baris dengan isActive = 1
+        const result = await mssql.query(query);
+
+        // Array untuk menyimpan path tangkapan layar
+        const screenshotPaths = [];
+
+        // Counter untuk nama file
+        let screenshotCounter = 1;
+
+        browser = await puppeteer.launch({
+            headless: true, 
+            args: ['--remote-debugging-port=9222', '--remote-debugging-address=localhost', '--no-sandbox']
+        });
+
+        // Lakukan iterasi untuk setiap baris hasil query
+        for (const row of result.recordset) {
+            const page = await browser.newPage();
+            try {
+                // Lakukan login
+                await login(page, row, screenshotCounter === 1);
+
+                // Set viewportHeight sesuai dengan nilai heightViewPort dari database
+                const viewportHeight = row.heightViewPort;
+                const currentTime = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' ');
+                
+                // Ambil tangkapan layar
+                const screenshotPath = `D:\\JS\\image\\screenshot${screenshotCounter}.jpg`;
+                await takeScreenshot(page, screenshotPath, viewportHeight);
+                screenshotPaths.push(screenshotPath);
+
+                // Ambil nama dashboard dari baris saat ini
+                const idDashboard = row.id;
+                const namaDashboard = row.namaDashboard;
+                
+                const caption = `Screenshots ${namaDashboard} pada ${currentTime}`;
+
+                await sendMediaToWhatsApp([screenshotPath], '6289674235468@c.us', caption, idDashboard, namaDashboard, currentTime);
+ 
+                // Increment counter
+                screenshotCounter++;
+
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                await page.close();
+            }
+        }
+
+        console.log('Proses selesai!');
+        process.exit();
+    } catch (error) {
+        console.error('Terjadi kesalahan:', error);
+        process.exit(1);
+    }
+}
+
+// Panggil fungsi utama
+main();
