@@ -51,12 +51,6 @@ async function sendMediaToWhatsApp(mediaPath, groupName, caption, idDashboard, n
     }
 }
 
-// Fungsi untuk memeriksa apakah waktu saat ini sudah melewati pukul 20.00
-function isAfter() {
-    const currentHour = new Date().getHours(); // Ambil jam dari waktu saat ini
-    return currentHour >= 20; // Mengembalikan true jika waktu saat ini adalah setelah pukul 20.00
-}
-
 // Fungsi utama
 async function main() {
     let browser;
@@ -129,9 +123,4 @@ async function main() {
     }
 }
 
-// Panggil fungsi utama hanya jika waktu saat ini bukan melebihi pukul 20.00
-if (!isAfter()) {
-    main();
-} else {
-    console.log("Program tidak dieksekusi karena waktu saat ini sudah melebihi pukul 20.00");
-}
+main();
